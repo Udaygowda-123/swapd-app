@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { Inbox } from 'lucide-react-native';
 import { useState } from 'react';
@@ -8,6 +8,7 @@ import { BellButton } from '@/components/bell-button';
 import { ProposalStrip } from '@/components/proposal-strip';
 import { Avatar, Badge, Button, Chip, EmptyState, ErrorState, Skeleton, T } from '@/components/ui';
 import { api } from '@/lib/api';
+import { usePullRefresh } from '@/lib/use-pull-refresh';
 import { useAuth } from '@/lib/auth';
 import { formatINR, timeAgo, timeLeft } from '@/lib/format';
 import { GROUPS, groupOf, isOpen, mySide, OFFER_STATUS } from '@/lib/offers';
@@ -19,21 +20,22 @@ const BOXES = [{ id: 'all', label: 'All' }, { id: 'received', label: 'Received' 
 export default function Offers() {
   const insets = useSafeAreaInsets(); const { user, status } = useAuth();
   const [box, setBox] = useState<(typeof BOXES)[number]['id']>('all'); const [state, setState] = useState<'' | 'open' | 'closed'>('');
-  const q = useQuery({ queryKey: ['offers', box, state], queryFn: () => api<Page<Offer>>(`/offers?box=${box}&limit=50${state ? `&state=${state}` : ''}`), enabled: status === 'authed', refetchInterval: 30_000 });
+  const q = useQuery({ queryKey: ['offers', box, state], queryFn: () => api<Page<Offer>>(`/offers?box=${box}&limit=50${state ? `&state=${state}` : ''}`), enabled: status === 'authed', refetchInterval: 30_000, placeholderData: keepPreviousData });
+  const pull = usePullRefresh(q.refetch);
   const sections = GROUPS.map((g) => ({ ...g, data: (q.data?.items ?? []).filter((o) => groupOf(o) === g.id) })).filter((g) => g.data.length);
 
   return (
     <SectionList
       sections={sections} keyExtractor={(o) => o.id} stickySectionHeadersEnabled={false}
-      contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 32, gap: 12 }}
-      refreshControl={<RefreshControl refreshing={q.isRefetching} onRefresh={() => { q.refetch(); }} tintColor={colors.ink} />}
+      contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 28, gap: 10 }}
+      refreshControl={<RefreshControl refreshing={pull.refreshing} onRefresh={pull.onRefresh} tintColor={colors.ink} />}
       ListHeaderComponent={
-        <View style={{ paddingTop: insets.top + 8, gap: 14, paddingBottom: 4 }}>
+        <View style={{ paddingTop: insets.top + 4, gap: 10, paddingBottom: 2 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
             <T v="display" style={{ flexShrink: 1 }}>Your <T v="accent" color={colors.cobaltInk}>offers</T></T>
             <BellButton />
           </View>
-          <T color={colors.muted} style={{ marginTop: -8 }}>Everything you&apos;re negotiating, in one place.</T>
+          <T color={colors.muted} style={{ marginTop: -6 }}>Everything you&apos;re negotiating, in one place.</T>
           <View style={{ flexDirection: 'row', gap: 8 }}>{BOXES.map((b) => <Chip key={b.id} label={b.label} active={box === b.id} onPress={() => setBox(b.id)} />)}</View>
           <View style={{ flexDirection: 'row', gap: 6, marginTop: -6 }}>{([['', 'Any status'], ['open', 'Needs action / open'], ['closed', 'Closed']] as const).map(([v, l]) => (
             <Pressable key={v} accessibilityRole="tab" accessibilityState={{ selected: state === v }} onPress={() => setState(v)} style={[s.mini, state === v && s.miniOn]}><T v="small" style={{ fontFamily: fonts.semibold, fontSize: 12 }} color={state === v ? colors.paper : colors.ink}>{l}</T></Pressable>
@@ -41,7 +43,7 @@ export default function Offers() {
         </View>
       }
       renderSectionHeader={({ section }) => (
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingTop: 14 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingTop: 10 }}>
           <T v="heading">{section.label}</T><View style={s.count}><T v="small" style={{ fontSize: 12 }} color={colors.muted}>{section.data.length}</T></View>
         </View>
       )}

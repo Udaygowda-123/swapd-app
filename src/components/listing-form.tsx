@@ -1,7 +1,7 @@
 import { useQueryClient } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { Eye } from 'lucide-react-native';
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CATEGORY_ICON } from '@/components/category-icons';
@@ -12,6 +12,7 @@ import { BackHeader, Button, Chip, Field, T } from '@/components/ui';
 import { api, ApiError } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { formatINR } from '@/lib/format';
+import { discardPhotos } from '@/lib/upload';
 import { CATEGORIES, CATEGORY_LABELS, CONDITION_LABELS, CONDITIONS, type CashFlexibility, type Category, type Condition, type ExchangeMethod } from '@/lib/shared';
 import { useToast } from '@/lib/toast';
 import type { ImageDto, Listing } from '@/lib/types';
@@ -34,6 +35,10 @@ export function ListingForm({ listing }: { listing?: Listing }) {
   const [errors, setErrors] = useState<Record<string, string>>({}); const [preview, setPreview] = useState(false); const [busy, setBusy] = useState(false);
   const set = <K extends keyof Values>(k: K, val: Values[K]) => { setV((x) => ({ ...x, [k]: val })); setErrors((e) => ({ ...e, [k]: '' })); };
   const onImages = useCallback((i: ImageDto[], c: string | null) => { setImages(i); setCoverId(c); setErrors((e) => ({ ...e, imageIds: '' })); }, []);
+  // If the form is abandoned, delete photos uploaded during it so they don't pile up (the API caps unattached photos).
+  const published = useRef(false); const latest = useRef(images); const initialIds = useRef(new Set((listing?.images ?? []).map((i) => i.id)));
+  useEffect(() => { latest.current = images; }, [images]);
+  useEffect(() => () => { if (!published.current) discardPhotos(latest.current.filter((i) => !initialIds.current.has(i.id)).map((i) => i.id)); }, []);
 
   function review() {
     const e: Record<string, string> = {};
@@ -56,7 +61,7 @@ export function ListingForm({ listing }: { listing?: Listing }) {
     };
     try {
       const saved = await api<Listing>(listing ? `/listings/${listing.id}` : '/listings', { method: listing ? 'PATCH' : 'POST', body });
-      toast.success(listing ? 'Listing updated' : 'Your item is live 🎉'); qc.invalidateQueries(); setPreview(false);
+      published.current = true; toast.success(listing ? 'Listing updated' : 'Your item is live 🎉'); qc.invalidateQueries(); setPreview(false);
       router.replace(`/listing/${saved.id}`);
     } catch (e) {
       setPreview(false);

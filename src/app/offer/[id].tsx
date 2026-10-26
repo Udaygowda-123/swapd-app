@@ -7,6 +7,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ProposalStrip } from '@/components/proposal-strip';
 import { BackHeader, Badge, Button, Card, EmptyState, ErrorState, Loading, T } from '@/components/ui';
 import { api, ApiError, newIdempotencyKey } from '@/lib/api';
+import { usePullRefresh } from '@/lib/use-pull-refresh';
 import { useAuth } from '@/lib/auth';
 import { confirm } from '@/lib/confirm';
 import { useToast } from '@/lib/toast';
@@ -20,6 +21,7 @@ type Action = 'accept' | 'reject' | 'withdraw';
 export default function OfferScreen() {
   const { id } = useLocalSearchParams<{ id: string }>(); const insets = useSafeAreaInsets(); const { user } = useAuth(); const qc = useQueryClient(); const toast = useToast();
   const q = useQuery({ queryKey: ['offer', id], queryFn: () => api<Offer>(`/offers/${id}`), refetchInterval: 20_000 });
+  const pull = usePullRefresh(q.refetch);
   const [busy, setBusy] = useState<Action | null>(null); const idem = useRef(newIdempotencyKey());
   const me = user?.id;
 
@@ -53,7 +55,7 @@ export default function OfferScreen() {
   return (
     <View style={{ flex: 1 }}>
       <View style={{ paddingTop: insets.top }}><BackHeader label="Offers" fallback="/offers" /></View>
-      <ScrollView contentContainerStyle={{ padding: 20, paddingTop: 4, gap: 18, paddingBottom: 40 + insets.bottom }} refreshControl={<RefreshControl refreshing={q.isRefetching} onRefresh={() => { q.refetch(); }} tintColor={colors.ink} />}>
+      <ScrollView contentContainerStyle={{ padding: 20, paddingTop: 4, gap: 18, paddingBottom: 40 + insets.bottom }} refreshControl={<RefreshControl refreshing={pull.refreshing} onRefresh={pull.onRefresh} tintColor={colors.ink} />}>
         <View style={{ gap: 8 }}>
           <View style={{ flexDirection: 'row', gap: 6 }}><Badge label={st.label} tone={st.tone} />{o.yourTurn ? <Badge label="Your turn" tone="cobalt" /> : null}</View>
           <T v="title">{o.targetListing.title}</T>

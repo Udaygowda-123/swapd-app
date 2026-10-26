@@ -8,6 +8,7 @@ import { PasswordSheet } from '@/components/password-sheet';
 import { ProfileHeader, UserListings, UserReviews } from '@/components/profile';
 import { Button, Chip, ErrorState, Loading, T } from '@/components/ui';
 import { api, ApiError } from '@/lib/api';
+import { usePullRefresh } from '@/lib/use-pull-refresh';
 import { useAuth } from '@/lib/auth';
 import { confirm } from '@/lib/confirm';
 import { usePulse } from '@/lib/pulse';
@@ -18,6 +19,7 @@ import { colors, fonts, radius } from '@/theme/tokens';
 export default function Me() {
   const insets = useSafeAreaInsets(); const { user, logout } = useAuth(); const pulse = usePulse(); const toast = useToast();
   const q = useQuery({ queryKey: ['profile', user?.id], queryFn: () => api<PublicProfile>(`/users/${user!.id}`), enabled: !!user });
+  const pull = usePullRefresh(q.refetch);
   const [sending, setSending] = useState(false); const [tab, setTab] = useState<'listings' | 'reviews'>('listings'); const [pw, setPw] = useState(false);
 
   if (!user) return <Loading />;
@@ -35,7 +37,7 @@ export default function Me() {
   ];
 
   return (
-    <ScrollView contentContainerStyle={{ paddingTop: insets.top + 8, paddingHorizontal: 20, paddingBottom: 40, gap: 18 }} refreshControl={<RefreshControl refreshing={q.isRefetching} onRefresh={() => { q.refetch(); }} tintColor={colors.ink} />}>
+    <ScrollView contentContainerStyle={{ paddingTop: insets.top + 8, paddingHorizontal: 20, paddingBottom: 40, gap: 18 }} refreshControl={<RefreshControl refreshing={pull.refreshing} onRefresh={pull.onRefresh} tintColor={colors.ink} />}>
       {!user.emailVerifiedAt ? (
         <View style={s.verify}>
           <MailCheck size={18} color={colors.butterInk} />

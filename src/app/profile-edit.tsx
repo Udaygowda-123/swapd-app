@@ -35,7 +35,7 @@ function ProfileForm({ user }: { user: Me }) {
     const res = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], allowsEditing: true, aspect: [1, 1], quality: 1 });
     if (res.canceled) return;
     setUploading(true);
-    try { const img = await uploadPhoto(res.assets[0].uri, res.assets[0].width); setF((x) => ({ ...x, avatarUrl: img.thumbUrl ?? img.url })); }
+    try { const img = await uploadPhoto(res.assets[0].uri); setF((x) => ({ ...x, avatarUrl: img.thumbUrl ?? img.url })); }
     catch (e) { toast.error(e instanceof ApiError ? e.message : 'Upload failed'); } finally { setUploading(false); }
   }
 

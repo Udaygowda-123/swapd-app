@@ -71,7 +71,7 @@ export default function Chat() {
     const res = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 1 });
     if (res.canceled) return;
     setAttaching(true);
-    try { const img = await uploadPhoto(res.assets[0].uri, res.assets[0].width); setAttach((a) => [...a, img].slice(-4)); }
+    try { const img = await uploadPhoto(res.assets[0].uri); setAttach((a) => [...a, img].slice(-4)); }
     catch (e) { toast.error(e instanceof ApiError ? e.message : 'Could not attach image'); } finally { setAttaching(false); }
   }
   async function block() {

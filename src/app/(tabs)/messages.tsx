@@ -7,6 +7,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BellButton } from '@/components/bell-button';
 import { Avatar, Button, EmptyState, ErrorState, Skeleton, T } from '@/components/ui';
 import { absUrl, api } from '@/lib/api';
+import { usePullRefresh } from '@/lib/use-pull-refresh';
 import { useAuth } from '@/lib/auth';
 import { timeAgo } from '@/lib/format';
 import type { ConversationSummary } from '@/lib/types';
@@ -15,12 +16,13 @@ import { colors, fonts } from '@/theme/tokens';
 export default function Messages() {
   const insets = useSafeAreaInsets(); const { status } = useAuth();
   const q = useQuery({ queryKey: ['conversations'], queryFn: () => api<ConversationSummary[]>('/conversations'), enabled: status === 'authed', refetchInterval: 15_000 });
+  const pull = usePullRefresh(q.refetch);
   return (
     <FlatList
       data={q.data ?? []} keyExtractor={(c) => c.id}
       ItemSeparatorComponent={() => <View style={{ height: 1, backgroundColor: colors.line, marginLeft: 84 }} />}
-      refreshControl={<RefreshControl refreshing={q.isRefetching} onRefresh={() => { q.refetch(); }} tintColor={colors.ink} />}
-      ListHeaderComponent={<View style={{ paddingTop: insets.top + 8, paddingHorizontal: 20, paddingBottom: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}><T v="display"><T v="accent" color={colors.cobaltInk}>Messages</T></T><BellButton /></View>}
+      refreshControl={<RefreshControl refreshing={pull.refreshing} onRefresh={pull.onRefresh} tintColor={colors.ink} />}
+      ListHeaderComponent={<View style={{ paddingTop: insets.top + 4, paddingHorizontal: 20, paddingBottom: 8, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}><T v="display"><T v="accent" color={colors.cobaltInk}>Messages</T></T><BellButton /></View>}
       renderItem={({ item: c }) => {
         const other = c.participants[0]; const unread = c.unreadCount > 0;
         return (

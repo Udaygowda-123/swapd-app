@@ -65,6 +65,7 @@ export async function api<T = unknown>(path: string, opts: Opts = {}): Promise<T
     });
   } catch (e) {
     if ((e as Error)?.name === 'AbortError') throw e;
+    if (__DEV__) console.warn(`[api] ${method} ${path} network error:`, (e as Error)?.message ?? e); // the real cause, for debugging
     throw new ApiError(0, 'OFFLINE', "Can't reach SWAPD. Check your connection and try again.");
   }
   if (res.status === 401 && retry && accessToken && !path.startsWith('/auth/')) {

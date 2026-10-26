@@ -1,4 +1,4 @@
-import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query';
+import { keepPreviousData, useInfiniteQuery, useQueryClient } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { Layers, LayoutGrid, Plus, Search, SlidersHorizontal, X } from 'lucide-react-native';
 import { useCallback, useEffect, useMemo, useState } from 'react';
@@ -14,6 +14,7 @@ import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { CATEGORIES, CATEGORY_LABELS, type Category } from '@/lib/shared';
 import { useToast } from '@/lib/toast';
+import { usePullRefresh } from '@/lib/use-pull-refresh';
 import type { Listing, Page } from '@/lib/types';
 import { colors, fonts, radius } from '@/theme/tokens';
 
@@ -41,6 +42,7 @@ export default function Discover() {
     getNextPageParam: (p) => p.pageInfo.nextCursor,
     enabled: status !== 'loading',
     staleTime: 60_000,
+    placeholderData: keepPreviousData, // keep showing current results while a new filter/sort loads — no flash to skeletons
   });
   const all = useMemo(() => feed.data?.pages.flatMap((p) => p.items) ?? [], [feed.data]);
   const items = useMemo(() => all.filter((l) => !hidden.has(l.id)), [all, hidden]);
@@ -49,7 +51,8 @@ export default function Discover() {
   const { hasNextPage, isFetchingNextPage, fetchNextPage } = feed;
   const fetchMore = useCallback(() => { if (hasNextPage && !isFetchingNextPage) fetchNextPage(); }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
   const clearAll = () => { setText(''); setQ(''); setCategory(null); setFilters(NO_FILTERS); };
-  const refresh = () => { setHidden(new Set()); feed.refetch(); };
+  const { refetch } = feed;
+  const pull = usePullRefresh(useCallback(() => { setHidden(new Set()); return refetch(); }, [refetch]));
 
   async function dismiss(id: string) {
     setHidden((h) => new Set(h).add(id));
@@ -60,18 +63,22 @@ export default function Discover() {
   const decided = useCallback((id: string) => { setHidden((h) => new Set(h).add(id)); qc.invalidateQueries({ queryKey: ['saved'] }); }, [qc]);
 
   const header = (
-    <View style={{ paddingTop: insets.top + 8, gap: mode === 'swipe' ? 10 : 14, paddingBottom: mode === 'swipe' ? 10 : 16 }}>
+    <View style={{ paddingTop: insets.top + 4, gap: 10, paddingBottom: 10 }}>
       <View style={{ paddingHorizontal: 20 }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', minHeight: 44 }}>
-          <T v="label" color={colors.coralInk}>Discover</T>
-          <BellButton />
-        </View>
         {mode === 'grid' ? (
           <>
-            <T v="display">Find your next <T v="accent" color={colors.cobaltInk}>favourite</T></T>
+            {/* Bell floats beside the label/heading so it doesn't add a row of its own */}
+            <View style={{ position: 'absolute', right: 20, top: 0, zIndex: 1 }}><BellButton /></View>
+            <T v="label" color={colors.coralInk} style={{ marginTop: 6 }}>Discover</T>
+            <T v="display" style={{ marginTop: 2, marginRight: 52 }}>Find your next <T v="accent" color={colors.cobaltInk}>favourite</T></T>
             <T color={colors.muted} style={{ marginTop: 4 }}>{status === 'authed' ? 'Picked for what you want and what you have.' : 'Browse what people are swapping. Sign in for a feed tuned to you.'}</T>
           </>
-        ) : null}
+        ) : (
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+            <T v="label" color={colors.coralInk}>Discover</T>
+            <BellButton />
+          </View>
+        )}
       </View>
       <View style={{ flexDirection: 'row', gap: 10, paddingHorizontal: 20 }}>
         <View style={st.search}>
@@ -102,7 +109,7 @@ export default function Discover() {
         action={hasQuery ? <Button title="Clear filters" variant="outline" onPress={clearAll} /> : <Button title="List an item" icon={<Plus size={16} color={colors.ink} />} onPress={() => router.push(status === 'authed' ? '/listing/new' : '/login')} />} />;
 
   const sheet = <FiltersSheet open={filtersOpen} value={filters} onClose={() => setFiltersOpen(false)} onApply={setFilters} />;
-  const refreshControl = <RefreshControl refreshing={feed.isRefetching && !feed.isFetchingNextPage} onRefresh={refresh} tintColor={colors.ink} />;
+  const refreshControl = <RefreshControl refreshing={pull.refreshing} onRefresh={pull.onRefresh} tintColor={colors.ink} />;
 
   if (mode === 'swipe') return (
     <View style={{ flex: 1 }}>
@@ -120,7 +127,7 @@ export default function Discover() {
         data={items.length % 2 ? [...items, null] : items} keyExtractor={(l, i) => l?.id ?? `pad-${i}`} numColumns={2}
         ListHeaderComponent={header}
         columnWrapperStyle={{ gap: 12, paddingHorizontal: 20 }}
-        contentContainerStyle={{ gap: 20, paddingBottom: 32 }}
+        contentContainerStyle={{ gap: 16, paddingBottom: 28 }}
         renderItem={({ item }) => (item ? <ListingCard listing={item} onDismiss={status === 'authed' ? dismiss : undefined} /> : <View style={{ flex: 1 }} />)} // pad keeps an odd last card half-width
         onEndReachedThreshold={0.8} onEndReached={fetchMore}
         initialNumToRender={6} maxToRenderPerBatch={8} windowSize={9}
@@ -140,7 +147,7 @@ function Segment<V extends string>({ value, onChange, options, label }: { value:
     <View style={st.segment} accessibilityRole="tablist" accessibilityLabel={label}>
       {options.map((o) => (
         <Pressable key={o.v} accessibilityRole="tab" accessibilityLabel={o.label ?? o.text} accessibilityState={{ selected: value === o.v }} onPress={() => onChange(o.v)} style={[st.segBtn, !o.text && st.segIcon, value === o.v && st.segOn]}>
-          {o.icon}{o.text ? <T v="strong" style={{ fontSize: 14 }}>{o.text}</T> : null}
+          {o.icon}{o.text ? <T v="strong" style={{ fontSize: 13.5 }}>{o.text}</T> : null}
         </Pressable>
       ))}
     </View>
@@ -148,12 +155,12 @@ function Segment<V extends string>({ value, onChange, options, label }: { value:
 }
 
 const st = StyleSheet.create({
-  search: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 10, height: 50, paddingHorizontal: 16, borderRadius: radius.pill, borderWidth: 1, borderColor: colors.line, backgroundColor: colors.surface },
-  searchInput: { flex: 1, fontFamily: fonts.body, fontSize: 16, color: colors.ink, height: '100%' },
-  filterBtn: { width: 50, height: 50, borderRadius: 25, borderWidth: 1, borderColor: colors.line, backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center' },
+  search: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 8, height: 46, paddingHorizontal: 14, borderRadius: radius.pill, borderWidth: 1, borderColor: colors.line, backgroundColor: colors.surface },
+  searchInput: { flex: 1, fontFamily: fonts.body, fontSize: 15, color: colors.ink, height: '100%' },
+  filterBtn: { width: 46, height: 46, borderRadius: 23, borderWidth: 1, borderColor: colors.line, backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center' },
   count: { position: 'absolute', top: -3, right: -3, minWidth: 20, height: 20, borderRadius: 10, paddingHorizontal: 5, backgroundColor: colors.coral, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: colors.paper },
   segment: { flexDirection: 'row', gap: 4, padding: 4, borderRadius: radius.pill, backgroundColor: colors.overlay },
-  segBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, height: 38, paddingHorizontal: 14, borderRadius: radius.pill },
-  segIcon: { width: 44, paddingHorizontal: 0, justifyContent: 'center' },
+  segBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, height: 34, paddingHorizontal: 13, borderRadius: radius.pill },
+  segIcon: { width: 40, paddingHorizontal: 0, justifyContent: 'center' },
   segOn: { backgroundColor: colors.surface, shadowColor: '#000', shadowOpacity: 0.08, shadowRadius: 6, shadowOffset: { width: 0, height: 2 }, elevation: 2 },
 });

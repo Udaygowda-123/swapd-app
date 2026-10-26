@@ -9,15 +9,15 @@ import { colors, fonts, radius, shadow } from '@/theme/tokens';
 
 /* ───────── Text ───────── */
 const VARIANTS = {
-  display: { fontFamily: fonts.display, fontSize: 36, lineHeight: 42, letterSpacing: -0.9 },
+  display: { fontFamily: fonts.display, fontSize: 34, lineHeight: 40, letterSpacing: -0.9 },
   title: { fontFamily: fonts.display, fontSize: 26, lineHeight: 30, letterSpacing: -0.6 },
   heading: { fontFamily: fonts.displayBold, fontSize: 19, lineHeight: 24, letterSpacing: -0.3 },
   body: { fontFamily: fonts.body, fontSize: 15, lineHeight: 22 },
   strong: { fontFamily: fonts.semibold, fontSize: 15, lineHeight: 22 },
   small: { fontFamily: fonts.body, fontSize: 13, lineHeight: 18 },
   label: { fontFamily: fonts.bold, fontSize: 11, lineHeight: 14, letterSpacing: 1.2, textTransform: 'uppercase' },
-  // Inherits size/line-height from the heading it sits in (like the web's <em class="accent">).
-  accent: { fontFamily: fonts.accent, letterSpacing: 0 },
+  // Sits inside a heading; a touch larger than the heading (serif reads smaller) but on the same line height so it's never clipped.
+  accent: { fontFamily: fonts.accent, fontSize: 38, lineHeight: 40, letterSpacing: 0 },
 } satisfies Record<string, TextStyle>;
 
 export function T({ v = 'body', color, style, children, ...p }: TextProps & { v?: keyof typeof VARIANTS; color?: string }) {
@@ -41,7 +41,7 @@ const BTN: Record<BtnVariant, { bg: string; fg: string; border?: string }> = {
 export function Button({ title, onPress, variant = 'primary', size = 'md', icon, loading, disabled, style }: {
   title: string; onPress?: () => void; variant?: BtnVariant; size?: 'sm' | 'md' | 'lg'; icon?: React.ReactNode; loading?: boolean; disabled?: boolean; style?: StyleProp<ViewStyle>;
 }) {
-  const c = BTN[variant]; const h = size === 'lg' ? 56 : size === 'sm' ? 38 : 48; const off = disabled || loading;
+  const c = BTN[variant]; const h = size === 'lg' ? 52 : size === 'sm' ? 36 : 46; const off = disabled || loading;
   return (
     <Pressable
       accessibilityRole="button" accessibilityState={{ disabled: !!off, busy: !!loading }} disabled={off}
@@ -59,7 +59,7 @@ export function Chip({ label, active, onPress, icon }: { label: string; active?:
   return (
     <Pressable accessibilityRole="button" accessibilityState={{ selected: !!active }} onPress={onPress}
       style={({ pressed }) => [s.chip, active ? { backgroundColor: colors.ink, borderColor: colors.ink } : null, pressed && { opacity: 0.8 }]}>
-      {icon}<Text style={{ fontFamily: fonts.semibold, fontSize: 14, color: active ? colors.paper : colors.ink }}>{label}</Text>
+      {icon}<Text style={{ fontFamily: fonts.semibold, fontSize: 13.5, color: active ? colors.paper : colors.ink }}>{label}</Text>
     </Pressable>
   );
 }
@@ -150,13 +150,13 @@ export const PressableCard = (p: PressableProps & { style?: StyleProp<ViewStyle>
 
 const s = StyleSheet.create({
   btn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderRadius: radius.pill, borderWidth: 1 },
-  chip: { flexDirection: 'row', alignItems: 'center', gap: 6, height: 40, paddingHorizontal: 16, borderRadius: radius.pill, borderWidth: 1, borderColor: colors.line, backgroundColor: colors.surface },
+  chip: { flexDirection: 'row', alignItems: 'center', gap: 6, height: 36, paddingHorizontal: 14, borderRadius: radius.pill, borderWidth: 1, borderColor: colors.line, backgroundColor: colors.surface },
   badge: { alignSelf: 'flex-start', paddingHorizontal: 10, paddingVertical: 4, borderRadius: radius.pill },
   card: { backgroundColor: colors.surface, borderRadius: radius.card, borderWidth: 1, borderColor: colors.line, padding: 16, ...shadow.card },
   backRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 12, paddingVertical: 6 },
   back: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingLeft: 4, paddingRight: 14, height: 42, borderRadius: radius.pill },
   backIcon: { width: 34, height: 34, borderRadius: 17, backgroundColor: colors.overlay, alignItems: 'center', justifyContent: 'center' },
-  input: { height: 50, borderRadius: radius.control, borderWidth: 1, borderColor: colors.line, backgroundColor: colors.surface, paddingHorizontal: 14, fontFamily: fonts.body, fontSize: 16, color: colors.ink },
+  input: { height: 48, borderRadius: radius.control, borderWidth: 1, borderColor: colors.line, backgroundColor: colors.surface, paddingHorizontal: 14, fontFamily: fonts.body, fontSize: 16, color: colors.ink },
   empty: { alignItems: 'center', gap: 10, paddingVertical: 48, paddingHorizontal: 24 },
   emptyIcon: { width: 72, height: 72, borderRadius: 36, backgroundColor: colors.coralSoft, alignItems: 'center', justifyContent: 'center', marginBottom: 6 },
 });

@@ -6,6 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ProposalStrip } from '@/components/proposal-strip';
 import { BackHeader, Badge, Button, EmptyState, ErrorState, Loading, T, type Tone } from '@/components/ui';
 import { api } from '@/lib/api';
+import { usePullRefresh } from '@/lib/use-pull-refresh';
 import { useAuth } from '@/lib/auth';
 import { timeAgo } from '@/lib/format';
 import type { DealStatus } from '@/lib/shared';
@@ -17,13 +18,14 @@ const TONE: Record<DealStatus, Tone> = { ACTIVE: 'butter', COMPLETED: 'mint', CA
 export default function Deals() {
   const insets = useSafeAreaInsets(); const { user } = useAuth();
   const q = useQuery({ queryKey: ['deals'], queryFn: () => api<Deal[]>('/deals') });
+  const pull = usePullRefresh(q.refetch);
   return (
     <View style={{ flex: 1, paddingTop: insets.top }}>
       <BackHeader fallback="/me" />
       <FlatList
         data={q.data ?? []} keyExtractor={(d) => d.id}
         contentContainerStyle={{ paddingHorizontal: 20, gap: 12, paddingBottom: 32 + insets.bottom }}
-        refreshControl={<RefreshControl refreshing={q.isRefetching} onRefresh={() => { q.refetch(); }} tintColor={colors.ink} />}
+        refreshControl={<RefreshControl refreshing={pull.refreshing} onRefresh={pull.onRefresh} tintColor={colors.ink} />}
         ListHeaderComponent={<View style={{ paddingBottom: 6 }}><T v="display">Deals</T><T color={colors.muted}>Accepted swaps and where they stand.</T></View>}
         renderItem={({ item: d }) => (
           <Pressable accessibilityRole="link" onPress={() => router.push(`/deal/${d.id}`)} style={({ pressed }) => [s.card, pressed && { transform: [{ scale: 0.985 }] }]}>

@@ -5,6 +5,7 @@ import { FlatList, Pressable, RefreshControl, StyleSheet, View } from 'react-nat
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BackHeader, Button, EmptyState, ErrorState, Loading, T } from '@/components/ui';
 import { api } from '@/lib/api';
+import { usePullRefresh } from '@/lib/use-pull-refresh';
 import { timeAgo } from '@/lib/format';
 import type { NotificationDto, Page } from '@/lib/types';
 import { colors, fonts } from '@/theme/tokens';
@@ -34,6 +35,7 @@ function describe(n: NotificationDto): { text: string; href: Href } {
 export default function Notifications() {
   const insets = useSafeAreaInsets(); const qc = useQueryClient();
   const q = useQuery({ queryKey: ['notifications'], queryFn: () => api<Page<NotificationDto> & { unreadCount: number }>('/notifications') });
+  const pull = usePullRefresh(q.refetch);
   const done = () => { qc.invalidateQueries({ queryKey: ['notifications'] }); qc.invalidateQueries({ queryKey: ['pulse'] }); };
   const readOne = useMutation({ mutationFn: (id: string) => api(`/notifications/${id}/read`, { method: 'POST' }), onSuccess: done });
   const readAll = useMutation({ mutationFn: () => api('/notifications/read-all', { method: 'POST' }), onSuccess: done });
@@ -45,7 +47,7 @@ export default function Notifications() {
       <FlatList
         data={q.data?.items ?? []} keyExtractor={(n) => n.id}
         contentContainerStyle={{ paddingHorizontal: 20, gap: 8, paddingBottom: 32 + insets.bottom }}
-        refreshControl={<RefreshControl refreshing={q.isRefetching} onRefresh={() => { q.refetch(); }} tintColor={colors.ink} />}
+        refreshControl={<RefreshControl refreshing={pull.refreshing} onRefresh={pull.onRefresh} tintColor={colors.ink} />}
         ListHeaderComponent={<View style={{ paddingBottom: 8 }}><T v="display">Notifications</T><T color={colors.muted}>{unread ? `${unread} unread` : "You're all caught up."}</T></View>}
         renderItem={({ item: n }) => {
           const d = describe(n);
