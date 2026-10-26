@@ -1,56 +1,65 @@
-# Welcome to your Expo app 👋
+# SWAPD — mobile app (iOS + Android)
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+The SWAPD swapping marketplace as a native app. One codebase builds both the iPhone and Android apps.
+It talks to the same API and database as the website ([barter](https://github.com/Udaygowda-123/barter)), so accounts,
+listings, offers, chats and deals are shared — sign in with your website account.
 
-## Get started
+## Stack (if you know Next.js, you mostly know this)
 
-1. Install dependencies
+| Here | Equivalent on the web app |
+|---|---|
+| **Expo + React Native**, TypeScript | React + Next.js |
+| **Expo Router** — files in `src/app/` are screens | Next.js `app/` folder routing |
+| `<View>`, `<Text>`, `<Pressable>`, `StyleSheet` | `<div>`, `<p>`, `<button>`, Tailwind |
+| **TanStack Query** | TanStack Query (same) |
+| `expo-secure-store` (Keychain / Keystore) | httpOnly refresh cookie |
 
+## Run it on your phone (no Xcode / Android Studio needed)
+
+1. Install **Expo Go** from the App Store / Play Store.
+2. In this folder:
    ```bash
    npm install
-   ```
-
-2. Start the app
-
-   ```bash
    npx expo start
    ```
+3. Scan the QR code (iPhone: Camera app · Android: inside Expo Go). Phone and laptop must be on the same Wi-Fi.
 
-In the output, you'll find options to open the app in a
+By default the app uses the **live** API (`https://barter-web-wheat.vercel.app`). To use your local web app and its
+dev database instead, copy `.env.example` to `.env.local` and set `EXPO_PUBLIC_API_URL` to your laptop's Wi-Fi IP.
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+## Project layout
 
-You can start developing by editing the files inside the **src/app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
-
-```bash
-npm run reset-project
+```
+src/app/            screens (Expo Router)
+  (tabs)/           Discover · Offers · + (list item) · Messages · Me
+  welcome, login, register, forgot
+  listing/[id]      item detail        listing/new   create listing (photos)
+  swap/[id]         offer composer (also counters: ?counter=<offerId>)
+  offer/[id]        offer detail       deal/[id]     deal steps & review
+  chat/[id]         conversation       user/[id]     public profile
+  saved, notifications, deals
+src/components/     UI kit (ui.tsx), listing card, proposal strip, flip deck…
+src/lib/            api client + auth, types shared with the API, formatters
+src/theme/tokens.ts brand colours & fonts (same as the website's design system)
 ```
 
-This command will move the starter code to the **example** directory and create a blank **src/app** directory where you can start developing.
+## Checks
 
-### Other setup steps
+```bash
+npm run typecheck
+npm run lint
+npx expo-doctor
+```
 
-- To set up ESLint for linting, run `npx expo lint`, or follow our guide on ["Using ESLint and Prettier"](https://docs.expo.dev/guides/using-eslint/)
-- If you'd like to set up unit testing, follow our guide on ["Unit Testing with Jest"](https://docs.expo.dev/develop/unit-testing/)
-- Learn more about the TypeScript setup in this template in our guide on ["Using TypeScript"](https://docs.expo.dev/guides/typescript/)
+## Shipping to the stores
 
-## Learn more
+Builds run in the cloud with **EAS** (free tier available) — no Mac needed for Android, and no local Xcode for iOS:
 
-To learn more about developing your project with Expo, look at the following resources:
+```bash
+npx eas-cli@latest login
+npx eas-cli@latest build --platform android   # .aab for Google Play (or --profile preview for an installable .apk)
+npx eas-cli@latest build --platform ios       # needs an Apple Developer account ($99/yr)
+```
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
-
-## Join the community
-
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+Bundle IDs are `com.swapd.app` (both platforms, set in `app.json`) — change them before the first store build if you
+own a different domain.
