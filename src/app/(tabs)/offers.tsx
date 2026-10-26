@@ -4,6 +4,7 @@ import { Inbox } from 'lucide-react-native';
 import { useState } from 'react';
 import { Pressable, RefreshControl, SectionList, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { BellButton } from '@/components/bell-button';
 import { ProposalStrip } from '@/components/proposal-strip';
 import { Avatar, Badge, Button, Chip, EmptyState, ErrorState, Skeleton, T } from '@/components/ui';
 import { api } from '@/lib/api';
@@ -28,7 +29,10 @@ export default function Offers() {
       refreshControl={<RefreshControl refreshing={q.isRefetching} onRefresh={() => { q.refetch(); }} tintColor={colors.ink} />}
       ListHeaderComponent={
         <View style={{ paddingTop: insets.top + 8, gap: 14, paddingBottom: 4 }}>
-          <T v="display">Your <T v="accent" color={colors.cobaltInk}>offers</T></T>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+            <T v="display" style={{ flexShrink: 1 }}>Your <T v="accent" color={colors.cobaltInk}>offers</T></T>
+            <BellButton />
+          </View>
           <T color={colors.muted} style={{ marginTop: -8 }}>Everything you&apos;re negotiating, in one place.</T>
           <View style={{ flexDirection: 'row', gap: 8 }}>{BOXES.map((b) => <Chip key={b.id} label={b.label} active={box === b.id} onPress={() => setBox(b.id)} />)}</View>
           <View style={{ flexDirection: 'row', gap: 6, marginTop: -6 }}>{([['', 'Any status'], ['open', 'Needs action / open'], ['closed', 'Closed']] as const).map(([v, l]) => (
@@ -73,7 +77,7 @@ function OfferRow({ o, me }: { o: Offer; me?: string }) {
 }
 
 const s = StyleSheet.create({
-  card: { backgroundColor: colors.surface, borderRadius: radius.card, borderWidth: 1.5, borderColor: colors.line, padding: 14, gap: 12, ...shadow.card },
+  card: { backgroundColor: colors.surface, borderRadius: 22, borderWidth: 1.5, borderColor: colors.line, padding: 12, gap: 10, ...shadow.card },
   mini: { height: 32, paddingHorizontal: 12, borderRadius: radius.pill, borderWidth: 1, borderColor: colors.line, backgroundColor: colors.surface, justifyContent: 'center' },
   miniOn: { backgroundColor: colors.ink, borderColor: colors.ink },
   count: { backgroundColor: colors.overlay, borderRadius: 999, paddingHorizontal: 8, paddingVertical: 1 },

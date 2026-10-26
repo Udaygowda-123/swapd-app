@@ -9,18 +9,21 @@ import { colors, fonts, radius, shadow } from '@/theme/tokens';
 
 /* ───────── Text ───────── */
 const VARIANTS = {
-  display: { fontFamily: fonts.display, fontSize: 36, lineHeight: 38, letterSpacing: -0.9 },
+  display: { fontFamily: fonts.display, fontSize: 36, lineHeight: 42, letterSpacing: -0.9 },
   title: { fontFamily: fonts.display, fontSize: 26, lineHeight: 30, letterSpacing: -0.6 },
   heading: { fontFamily: fonts.displayBold, fontSize: 19, lineHeight: 24, letterSpacing: -0.3 },
   body: { fontFamily: fonts.body, fontSize: 15, lineHeight: 22 },
   strong: { fontFamily: fonts.semibold, fontSize: 15, lineHeight: 22 },
   small: { fontFamily: fonts.body, fontSize: 13, lineHeight: 18 },
   label: { fontFamily: fonts.bold, fontSize: 11, lineHeight: 14, letterSpacing: 1.2, textTransform: 'uppercase' },
-  accent: { fontFamily: fonts.accent, fontSize: 38, lineHeight: 40 },
+  // Inherits size/line-height from the heading it sits in (like the web's <em class="accent">).
+  accent: { fontFamily: fonts.accent, letterSpacing: 0 },
 } satisfies Record<string, TextStyle>;
 
-export function T({ v = 'body', color, style, ...p }: TextProps & { v?: keyof typeof VARIANTS; color?: string }) {
-  return <Text {...p} style={[VARIANTS[v], { color: color ?? colors.ink }, style]} />;
+export function T({ v = 'body', color, style, children, ...p }: TextProps & { v?: keyof typeof VARIANTS; color?: string }) {
+  // Italic serif glyphs lean past their advance width; a thin trailing space keeps the last letter from being clipped.
+  const content = v === 'accent' && typeof children === 'string' ? `${children}\u2009` : children;
+  return <Text {...p} style={[VARIANTS[v], { color: color ?? colors.ink }, style]}>{content}</Text>;
 }
 
 /* ───────── Button ───────── */

@@ -4,6 +4,7 @@ import { Layers, LayoutGrid, Plus, Search, SlidersHorizontal, X } from 'lucide-r
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, RefreshControl, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { BellButton } from '@/components/bell-button';
 import { CATEGORY_ICON } from '@/components/category-icons';
 import { activeFilterCount, FiltersSheet, NO_FILTERS, type Filters } from '@/components/filters-sheet';
 import { ListingCard } from '@/components/listing-card';
@@ -60,13 +61,18 @@ export default function Discover() {
 
   const header = (
     <View style={{ paddingTop: insets.top + 8, gap: mode === 'swipe' ? 10 : 14, paddingBottom: mode === 'swipe' ? 10 : 16 }}>
-      {mode === 'grid' ? (
-        <View style={{ paddingHorizontal: 20 }}>
+      <View style={{ paddingHorizontal: 20 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', minHeight: 44 }}>
           <T v="label" color={colors.coralInk}>Discover</T>
-          <T v="display" style={{ marginTop: 4 }}>Find your next <T v="accent" color={colors.cobaltInk}>favourite</T></T>
-          <T color={colors.muted} style={{ marginTop: 4 }}>{status === 'authed' ? 'Picked for what you want and what you have.' : 'Browse what people are swapping. Sign in for a feed tuned to you.'}</T>
+          <BellButton />
         </View>
-      ) : null}
+        {mode === 'grid' ? (
+          <>
+            <T v="display">Find your next <T v="accent" color={colors.cobaltInk}>favourite</T></T>
+            <T color={colors.muted} style={{ marginTop: 4 }}>{status === 'authed' ? 'Picked for what you want and what you have.' : 'Browse what people are swapping. Sign in for a feed tuned to you.'}</T>
+          </>
+        ) : null}
+      </View>
       <View style={{ flexDirection: 'row', gap: 10, paddingHorizontal: 20 }}>
         <View style={st.search}>
           <Search size={18} color={colors.muted} />

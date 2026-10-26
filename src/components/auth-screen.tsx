@@ -13,7 +13,7 @@ export function AuthScreen({ title, accent, subtitle, children }: { title: strin
     <KeyboardAvoidingView style={{ flex: 1, backgroundColor: colors.paper }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingTop: insets.top + 8, paddingBottom: insets.bottom + 32, paddingHorizontal: 20 }}>
         <Pressable accessibilityRole="button" accessibilityLabel="Close" hitSlop={10} onPress={() => (router.canGoBack() ? router.back() : router.replace('/welcome'))} style={s.close}><X size={20} color={colors.ink} /></Pressable>
-        <T v="title" style={{ fontSize: 34, lineHeight: 38, marginTop: 20 }}>{title}{accent ? <T v="accent" color={colors.cobaltInk}> {accent}</T> : null}</T>
+        <T v="title" style={{ fontSize: 34, lineHeight: 40, marginTop: 20 }}>{title}{accent ? <T v="accent" color={colors.cobaltInk}>{` ${accent}`}</T> : null}</T>
         {subtitle ? <T color={colors.muted} style={{ marginTop: 6 }}>{subtitle}</T> : null}
         <View style={{ gap: 16, marginTop: 28 }}>{children}</View>
       </ScrollView>

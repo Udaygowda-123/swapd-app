@@ -28,8 +28,8 @@ export function SwipeDeck({ items, hasMore, onNeedMore, onDecided }: { items: Li
   const requireAccount = useRequireAccount(); const toast = useToast();
   const [index, setIndex] = useState(0); const [photo, setPhoto] = useState(0); const [busy, setBusy] = useState(false);
   const x = useSharedValue(0);
-  // Size the card to the screen so the card and its buttons fit above the tab bar (header + buttons + tabs ≈ 420pt).
-  const { height } = useWindowDimensions(); const cardW = Math.max(220, Math.min(420, (height - 420) * 0.78));
+  // Size the card to the screen so the card and its buttons fit above the tab bar (header + buttons + tabs ≈ 470pt).
+  const { height } = useWindowDimensions(); const cardW = Math.max(220, Math.min(420, (height - 470) * 0.78));
   const current = items[index]; const next = items[index + 1];
 
   useEffect(() => { if (hasMore && items.length - index <= 3) onNeedMore(); }, [index, items.length, hasMore, onNeedMore]);

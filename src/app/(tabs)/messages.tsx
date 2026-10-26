@@ -4,6 +4,7 @@ import { router } from 'expo-router';
 import { MessageCircle } from 'lucide-react-native';
 import { FlatList, Pressable, RefreshControl, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { BellButton } from '@/components/bell-button';
 import { Avatar, Button, EmptyState, ErrorState, Skeleton, T } from '@/components/ui';
 import { absUrl, api } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
@@ -19,7 +20,7 @@ export default function Messages() {
       data={q.data ?? []} keyExtractor={(c) => c.id}
       ItemSeparatorComponent={() => <View style={{ height: 1, backgroundColor: colors.line, marginLeft: 84 }} />}
       refreshControl={<RefreshControl refreshing={q.isRefetching} onRefresh={() => { q.refetch(); }} tintColor={colors.ink} />}
-      ListHeaderComponent={<View style={{ paddingTop: insets.top + 8, paddingHorizontal: 20, paddingBottom: 12 }}><T v="display"><T v="accent" color={colors.cobaltInk}>Messages</T></T></View>}
+      ListHeaderComponent={<View style={{ paddingTop: insets.top + 8, paddingHorizontal: 20, paddingBottom: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}><T v="display"><T v="accent" color={colors.cobaltInk}>Messages</T></T><BellButton /></View>}
       renderItem={({ item: c }) => {
         const other = c.participants[0]; const unread = c.unreadCount > 0;
         return (
