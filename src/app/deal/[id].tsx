@@ -8,7 +8,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BackHeader, Badge, Button, Card, ErrorState, Field, Loading, T, type Tone } from '@/components/ui';
 import { absUrl, api, ApiError } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
-import { confirm, notify } from '@/lib/confirm';
+import { confirm } from '@/lib/confirm';
+import { useToast } from '@/lib/toast';
 import { formatINR } from '@/lib/format';
 import type { DealStatus, ExchangeMethod } from '@/lib/shared';
 import type { Deal, ListingBrief } from '@/lib/types';
@@ -17,7 +18,7 @@ import { colors, fonts, radius } from '@/theme/tokens';
 const DEAL_TONE: Record<DealStatus, Tone> = { ACTIVE: 'butter', COMPLETED: 'mint', CANCELLED: 'neutral', DISPUTED: 'danger' };
 
 export default function DealScreen() {
-  const { id } = useLocalSearchParams<{ id: string }>(); const insets = useSafeAreaInsets(); const { user } = useAuth(); const qc = useQueryClient();
+  const { id } = useLocalSearchParams<{ id: string }>(); const insets = useSafeAreaInsets(); const { user } = useAuth(); const qc = useQueryClient(); const toast = useToast();
   const q = useQuery({ queryKey: ['deal', id], queryFn: () => api<Deal>(`/deals/${id}`), refetchInterval: 30_000 });
   const [busy, setBusy] = useState<string | null>(null);
   const [method, setMethod] = useState<ExchangeMethod>('LOCAL_HANDOVER'); const [notes, setNotes] = useState(''); const [editPlan, setEditPlan] = useState(false);
@@ -37,8 +38,8 @@ export default function DealScreen() {
       if (next && typeof next === 'object' && 'terms' in next) qc.setQueryData(['deal', id], next as Deal); else q.refetch();
       qc.invalidateQueries({ queryKey: ['deals'] }); qc.invalidateQueries({ queryKey: ['offers'] });
       setEditPlan(false); setReasonFor(null); setReason('');
-      if (ok) notify(ok);
-    } catch (e) { notify('Could not update the deal', e instanceof ApiError ? e.message : 'Check your connection and try again.'); }
+      if (ok) toast.success(ok);
+    } catch (e) { toast.error(e instanceof ApiError ? e.message : 'Could not update the deal. Check your connection.'); }
     finally { setBusy(null); }
   }
 
@@ -76,7 +77,7 @@ export default function DealScreen() {
                   <Step done={d.handover.confirmedByMe} label="You agreed to this plan" />
                   <Step done={d.handover.confirmedByOther} label={`${d.counterpart.displayName} agreed`} />
                   <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
-                    {!d.handover.confirmedByMe ? <Button title="I agree to this plan" size="sm" loading={busy === 'confirm-handover'} onPress={() => act('confirm-handover')} /> : null}
+                    {!d.handover.confirmedByMe ? <Button title="I agree to this plan" size="sm" loading={busy === 'confirm-handover'} onPress={() => act('confirm-handover', undefined, 'You agreed to the plan')} /> : null}
                     <Button title="Change plan" size="sm" variant="outline" onPress={() => { setMethod(d.handover.method!); setNotes(d.handover.notes ?? ''); setEditPlan(true); }} />
                   </View>
                 </>
@@ -89,7 +90,7 @@ export default function DealScreen() {
                   </View>
                   <Field label="Details (optional)" multiline maxLength={500} value={notes} onChangeText={setNotes} placeholder={method === 'SHIPPING' ? 'Courier, who ships first…' : 'A public place and a time that works…'} />
                   <View style={{ flexDirection: 'row', gap: 8 }}>
-                    <Button title="Save plan" size="sm" loading={busy === 'handover'} onPress={() => act('handover', { method, notes: notes.trim() || undefined })} />
+                    <Button title="Save plan" size="sm" loading={busy === 'handover'} onPress={() => act('handover', { method, notes: notes.trim() || undefined }, 'Handover plan saved')} />
                     {editPlan ? <Button title="Cancel" size="sm" variant="ghost" onPress={() => setEditPlan(false)} /> : null}
                   </View>
                 </>
@@ -103,7 +104,7 @@ export default function DealScreen() {
               <Step done={d.completion.confirmedByOther} label={`${d.counterpart.displayName} confirmed`} />
               {!d.completion.confirmedByMe ? (
                 <Button title={d.handover.method ? 'Confirm swap complete' : 'Set a handover plan first'} disabled={!d.handover.method} loading={busy === 'confirm-completion'}
-                  onPress={async () => { if (await confirm('Confirm the swap is complete?', "Only confirm once you've received your item and you're happy with it. This can't be undone.", 'Yes, complete')) act('confirm-completion'); }} />
+                  onPress={async () => { if (await confirm('Confirm the swap is complete?', "Only confirm once you've received your item and you're happy with it. This can't be undone.", 'Yes, complete')) act('confirm-completion', undefined, 'Confirmed — the swap completes when both of you confirm'); }} />
               ) : !d.completion.confirmedByOther ? <View style={[s.banner, { backgroundColor: colors.butter }]}><T v="small" color={colors.butterInk}>Waiting for {d.counterpart.displayName} to confirm.</T></View> : null}
             </Card>
 
@@ -113,7 +114,7 @@ export default function DealScreen() {
                 <T v="small" color={colors.muted}>{reasonFor === 'cancel' ? 'The items become available again and the other person is told why.' : 'Moderators will review the deal. Describe what went wrong (at least 10 characters).'}</T>
                 <Field label="Reason" multiline value={reason} onChangeText={setReason} maxLength={reasonFor === 'cancel' ? 300 : 500} />
                 <View style={{ flexDirection: 'row', gap: 8 }}>
-                  <Button title={reasonFor === 'cancel' ? 'Cancel deal' : 'Open dispute'} variant="danger" size="sm" loading={busy === reasonFor} disabled={reason.trim().length < (reasonFor === 'cancel' ? 3 : 10)} onPress={() => act(reasonFor, { reason: reason.trim() })} />
+                  <Button title={reasonFor === 'cancel' ? 'Cancel deal' : 'Open dispute'} variant="danger" size="sm" loading={busy === reasonFor} disabled={reason.trim().length < (reasonFor === 'cancel' ? 3 : 10)} onPress={() => act(reasonFor, { reason: reason.trim() }, reasonFor === 'cancel' ? 'Deal cancelled' : 'Dispute opened — moderators will review it')} />
                   <Button title="Never mind" variant="ghost" size="sm" onPress={() => setReasonFor(null)} />
                 </View>
               </Card>

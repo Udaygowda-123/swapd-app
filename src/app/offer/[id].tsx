@@ -8,7 +8,8 @@ import { ProposalStrip } from '@/components/proposal-strip';
 import { BackHeader, Badge, Button, Card, EmptyState, ErrorState, Loading, T } from '@/components/ui';
 import { api, ApiError, newIdempotencyKey } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
-import { confirm, notify } from '@/lib/confirm';
+import { confirm } from '@/lib/confirm';
+import { useToast } from '@/lib/toast';
 import { formatINR, timeAgo, timeLeft } from '@/lib/format';
 import { isOpen, mySide, OFFER_STATUS } from '@/lib/offers';
 import type { Offer } from '@/lib/types';
@@ -17,7 +18,7 @@ import { colors, fonts } from '@/theme/tokens';
 type Action = 'accept' | 'reject' | 'withdraw';
 
 export default function OfferScreen() {
-  const { id } = useLocalSearchParams<{ id: string }>(); const insets = useSafeAreaInsets(); const { user } = useAuth(); const qc = useQueryClient();
+  const { id } = useLocalSearchParams<{ id: string }>(); const insets = useSafeAreaInsets(); const { user } = useAuth(); const qc = useQueryClient(); const toast = useToast();
   const q = useQuery({ queryKey: ['offer', id], queryFn: () => api<Offer>(`/offers/${id}`), refetchInterval: 20_000 });
   const [busy, setBusy] = useState<Action | null>(null); const idem = useRef(newIdempotencyKey());
   const me = user?.id;
@@ -41,9 +42,10 @@ export default function OfferScreen() {
       const body = a === 'accept' ? { expectedVersion: o.version, revisionNumber: latest.number } : { expectedVersion: o.version };
       const next = await api<Offer>(`/offers/${o.id}/${a}`, { method: 'POST', idempotencyKey: idem.current, body });
       qc.setQueryData(['offer', id], next); qc.invalidateQueries({ queryKey: ['offers'] }); qc.invalidateQueries({ queryKey: ['pulse'] });
+      toast.success({ accept: 'Offer accepted — a deal has been created', reject: 'Offer declined', withdraw: 'Offer withdrawn' }[a]);
       if (a === 'accept' && next.deal) router.push(`/deal/${next.deal.id}`);
     } catch (e) {
-      notify(e instanceof ApiError && e.code === 'STALE_OFFER' ? 'This offer just changed' : 'Could not complete that', e instanceof ApiError ? (e.code === 'STALE_OFFER' ? 'Review the latest version and try again.' : e.message) : 'Check your connection and try again.');
+      toast.error(e instanceof ApiError ? (e.code === 'STALE_OFFER' ? 'This offer just changed — review the latest version.' : e.message) : 'Could not complete that. Check your connection.');
       q.refetch();
     } finally { setBusy(null); }
   }

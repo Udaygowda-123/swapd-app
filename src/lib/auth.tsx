@@ -8,8 +8,8 @@ import type { Me } from './types';
 type Status = 'loading' | 'authed' | 'anon';
 interface AuthCtx {
   status: Status; user: Me | null;
-  login: (email: string, password: string) => Promise<void>;
-  register: (displayName: string, email: string, password: string) => Promise<void>;
+  login: (email: string, password: string) => Promise<Me>;
+  register: (displayName: string, email: string, password: string) => Promise<Me>;
   logout: () => Promise<void>;
   reload: () => Promise<void>;
 }
@@ -19,7 +19,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [status, setStatus] = useState<Status>('loading'); const [user, setUser] = useState<Me | null>(null);
   const qc = useQueryClient();
 
-  const signedIn = useCallback(async (s: SessionPayload) => { await startSession(s); setUser(s.me as Me); setStatus('authed'); qc.clear(); }, [qc]);
+  const signedIn = useCallback(async (s: SessionPayload) => { await startSession(s); setUser(s.me as Me); setStatus('authed'); qc.clear(); return s.me as Me; }, [qc]);
 
   // Restore the session from the keychain on launch.
   useEffect(() => {

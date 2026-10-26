@@ -3,6 +3,7 @@ import { X } from 'lucide-react-native';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { T } from '@/components/ui';
+import type { Me } from '@/lib/types';
 import { colors } from '@/theme/tokens';
 
 /** Shared frame for sign-in / sign-up / reset: close button, editorial heading, keyboard-safe scroll. */
@@ -25,10 +26,10 @@ export function FormError({ message }: { message?: string }) {
   return <View accessibilityRole="alert" style={s.err}><T v="small" color={colors.danger} style={{ fontFamily: 'Geist_600SemiBold' }}>{message}</T></View>;
 }
 
-/** After signing in: drop the auth modals and land on the tabs. */
-export function enterApp() {
+/** After signing in: drop the auth modals, then onboarding for new accounts (same rule as the web) or the tabs. */
+export function enterApp(me?: Me | null) {
   if (router.canDismiss()) router.dismissAll();
-  router.replace('/');
+  router.replace(me && !me.preference?.onboardedAt ? '/onboarding' : '/');
 }
 
 const s = StyleSheet.create({

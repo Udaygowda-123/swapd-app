@@ -20,7 +20,7 @@ export default function Register() {
     setFields(local); setError(undefined);
     if (Object.keys(local).length) return;
     setBusy(true);
-    try { await register(form.displayName.trim(), form.email.trim(), form.password); enterApp(); }
+    try { enterApp(await register(form.displayName.trim(), form.email.trim(), form.password)); }
     catch (e) { if (e instanceof ApiError) { setFields(e.fieldErrors()); setError(e.details?.length ? undefined : e.message); } else setError('Could not create your account. Try again.'); }
     finally { setBusy(false); }
   }

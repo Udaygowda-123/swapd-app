@@ -11,14 +11,14 @@ import { useAuth } from '@/lib/auth';
 import { formatINR, timeAgo, timeLeft } from '@/lib/format';
 import { GROUPS, groupOf, isOpen, mySide, OFFER_STATUS } from '@/lib/offers';
 import type { Offer, Page } from '@/lib/types';
-import { colors, radius, shadow } from '@/theme/tokens';
+import { colors, fonts, radius, shadow } from '@/theme/tokens';
 
 const BOXES = [{ id: 'all', label: 'All' }, { id: 'received', label: 'Received' }, { id: 'sent', label: 'Sent' }] as const;
 
 export default function Offers() {
   const insets = useSafeAreaInsets(); const { user, status } = useAuth();
-  const [box, setBox] = useState<(typeof BOXES)[number]['id']>('all');
-  const q = useQuery({ queryKey: ['offers', box], queryFn: () => api<Page<Offer>>(`/offers?box=${box}&limit=50`), enabled: status === 'authed', refetchInterval: 30_000 });
+  const [box, setBox] = useState<(typeof BOXES)[number]['id']>('all'); const [state, setState] = useState<'' | 'open' | 'closed'>('');
+  const q = useQuery({ queryKey: ['offers', box, state], queryFn: () => api<Page<Offer>>(`/offers?box=${box}&limit=50${state ? `&state=${state}` : ''}`), enabled: status === 'authed', refetchInterval: 30_000 });
   const sections = GROUPS.map((g) => ({ ...g, data: (q.data?.items ?? []).filter((o) => groupOf(o) === g.id) })).filter((g) => g.data.length);
 
   return (
@@ -31,6 +31,9 @@ export default function Offers() {
           <T v="display">Your <T v="accent" color={colors.cobaltInk}>offers</T></T>
           <T color={colors.muted} style={{ marginTop: -8 }}>Everything you&apos;re negotiating, in one place.</T>
           <View style={{ flexDirection: 'row', gap: 8 }}>{BOXES.map((b) => <Chip key={b.id} label={b.label} active={box === b.id} onPress={() => setBox(b.id)} />)}</View>
+          <View style={{ flexDirection: 'row', gap: 6, marginTop: -6 }}>{([['', 'Any status'], ['open', 'Needs action / open'], ['closed', 'Closed']] as const).map(([v, l]) => (
+            <Pressable key={v} accessibilityRole="tab" accessibilityState={{ selected: state === v }} onPress={() => setState(v)} style={[s.mini, state === v && s.miniOn]}><T v="small" style={{ fontFamily: fonts.semibold, fontSize: 12 }} color={state === v ? colors.paper : colors.ink}>{l}</T></Pressable>
+          ))}</View>
         </View>
       }
       renderSectionHeader={({ section }) => (
@@ -71,5 +74,7 @@ function OfferRow({ o, me }: { o: Offer; me?: string }) {
 
 const s = StyleSheet.create({
   card: { backgroundColor: colors.surface, borderRadius: radius.card, borderWidth: 1.5, borderColor: colors.line, padding: 14, gap: 12, ...shadow.card },
+  mini: { height: 32, paddingHorizontal: 12, borderRadius: radius.pill, borderWidth: 1, borderColor: colors.line, backgroundColor: colors.surface, justifyContent: 'center' },
+  miniOn: { backgroundColor: colors.ink, borderColor: colors.ink },
   count: { backgroundColor: colors.overlay, borderRadius: 999, paddingHorizontal: 8, paddingVertical: 1 },
 });

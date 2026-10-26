@@ -9,6 +9,7 @@ import { ProposalStrip } from '@/components/proposal-strip';
 import { BackHeader, Button, EmptyState, ErrorState, Field, Loading, T } from '@/components/ui';
 import { absUrl, api, ApiError, newIdempotencyKey } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
+import { useToast } from '@/lib/toast';
 import { formatINR } from '@/lib/format';
 import type { Listing, ListingBrief, Offer, Page } from '@/lib/types';
 import { colors, fonts, radius } from '@/theme/tokens';
@@ -24,7 +25,7 @@ const pool = (ownerId: string) => api<Page<Listing>>(`/listings?ownerId=${ownerI
  */
 export default function Composer() {
   const { id, counter } = useLocalSearchParams<{ id: string; counter?: string }>();
-  const insets = useSafeAreaInsets(); const { user } = useAuth(); const qc = useQueryClient(); const me = user?.id;
+  const insets = useSafeAreaInsets(); const { user } = useAuth(); const qc = useQueryClient(); const toast = useToast(); const me = user?.id;
 
   const target = useQuery({ queryKey: ['listing', id, true], queryFn: () => api<Listing>(`/listings/${id}`), enabled: !counter });
   const offer = useQuery({ queryKey: ['offer', counter], queryFn: () => api<Offer>(`/offers/${counter}`), enabled: !!counter });
@@ -72,6 +73,7 @@ export default function Composer() {
         o = await api<Offer>('/offers', { method: 'POST', idempotencyKey: key.current, body: { ...body, offeredListingIds: t.give, requestedListingIds: t.get } });
       }
       qc.invalidateQueries({ queryKey: ['offers'] }); qc.invalidateQueries({ queryKey: ['offer', o.id] });
+      toast.success(counter ? 'Counteroffer sent' : 'Offer sent!');
       router.replace(`/offer/${o.id}`);
     } catch (e) {
       key.current = newIdempotencyKey(); setStep('build');

@@ -1,28 +1,30 @@
 import { useQuery } from '@tanstack/react-query';
 import { router } from 'expo-router';
-import { Bell, ChevronRight, Handshake, Heart, LogOut, MailCheck, Plus } from 'lucide-react-native';
+import { Bell, ChevronRight, Handshake, Heart, KeyRound, LogOut, MailCheck, Pencil, Plus } from 'lucide-react-native';
 import { useState } from 'react';
 import { Pressable, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { ProfileHeader, UserListings } from '@/components/profile';
-import { Button, ErrorState, Loading, T } from '@/components/ui';
+import { PasswordSheet } from '@/components/password-sheet';
+import { ProfileHeader, UserListings, UserReviews } from '@/components/profile';
+import { Button, Chip, ErrorState, Loading, T } from '@/components/ui';
 import { api, ApiError } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
-import { confirm, notify } from '@/lib/confirm';
+import { confirm } from '@/lib/confirm';
 import { usePulse } from '@/lib/pulse';
+import { useToast } from '@/lib/toast';
 import type { PublicProfile } from '@/lib/types';
 import { colors, fonts, radius } from '@/theme/tokens';
 
 export default function Me() {
-  const insets = useSafeAreaInsets(); const { user, logout } = useAuth(); const pulse = usePulse();
+  const insets = useSafeAreaInsets(); const { user, logout } = useAuth(); const pulse = usePulse(); const toast = useToast();
   const q = useQuery({ queryKey: ['profile', user?.id], queryFn: () => api<PublicProfile>(`/users/${user!.id}`), enabled: !!user });
-  const [sending, setSending] = useState(false);
+  const [sending, setSending] = useState(false); const [tab, setTab] = useState<'listings' | 'reviews'>('listings'); const [pw, setPw] = useState(false);
 
   if (!user) return <Loading />;
   async function resend() {
     setSending(true);
-    try { await api('/auth/resend-verification', { method: 'POST' }); notify('Email sent', `We sent a new verification link to ${user!.email}.`); }
-    catch (e) { notify('Could not send', e instanceof ApiError ? e.message : 'Try again in a minute.'); } finally { setSending(false); }
+    try { await api('/auth/resend-verification', { method: 'POST' }); toast.success(`We sent a new link to ${user!.email}`); }
+    catch (e) { toast.error(e instanceof ApiError ? e.message : 'Try again in a minute.'); } finally { setSending(false); }
   }
   async function signOut() { if (await confirm('Sign out?', 'You can sign back in any time.', 'Sign out')) { await logout(); router.replace('/welcome'); } }
 
@@ -42,7 +44,15 @@ export default function Me() {
         </View>
       ) : null}
 
-      {q.isPending ? <Loading /> : q.isError ? <ErrorState onRetry={() => q.refetch()} /> : <ProfileHeader p={q.data} />}
+      {q.isPending ? <Loading /> : q.isError ? <ErrorState onRetry={() => q.refetch()} /> : (
+        <ProfileHeader p={q.data}>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 16 }}>
+            <Button title="Edit" size="sm" variant="outline" icon={<Pencil size={14} color={colors.ink} />} onPress={() => router.push('/profile-edit')} />
+            <Button title="Password" size="sm" variant="outline" icon={<KeyRound size={14} color={colors.ink} />} onPress={() => setPw(true)} />
+            <Button title="Sign out" size="sm" variant="ghost" icon={<LogOut size={14} color={colors.ink} />} onPress={signOut} />
+          </View>
+        </ProfileHeader>
+      )}
 
       <View style={s.menu}>
         {rows.map((r, i) => (
@@ -56,13 +66,14 @@ export default function Me() {
       </View>
 
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 6 }}>
-        <T v="title">My listings</T>
-        <Button title="List an item" size="sm" icon={<Plus size={16} color={colors.ink} />} onPress={() => router.push('/listing/new')} />
+        <View style={{ flexDirection: 'row', gap: 8 }} accessibilityRole="tablist">
+          <Chip label="My listings" active={tab === 'listings'} onPress={() => setTab('listings')} />
+          <Chip label="Reviews" active={tab === 'reviews'} onPress={() => setTab('reviews')} />
+        </View>
+        <Button title="List" size="sm" icon={<Plus size={16} color={colors.ink} />} onPress={() => router.push('/listing/new')} />
       </View>
-      <UserListings userId={user.id} own />
-
-      <Button title="Sign out" variant="outline" icon={<LogOut size={16} color={colors.ink} />} onPress={signOut} style={{ marginTop: 10 }} />
-      <T v="small" color={colors.muted} style={{ textAlign: 'center' }}>Edit your profile and password on the SWAPD website.</T>
+      {tab === 'listings' ? <UserListings userId={user.id} own /> : <UserReviews userId={user.id} />}
+      <PasswordSheet open={pw} onClose={() => setPw(false)} />
     </ScrollView>
   );
 }

@@ -15,7 +15,7 @@ export default function Login() {
   async function submit() {
     if (!email.trim() || !password) return setError('Enter your email and password.');
     setBusy(true); setError(undefined);
-    try { await login(email.trim(), password); enterApp(); }
+    try { enterApp(await login(email.trim(), password)); }
     catch (e) { setError(e instanceof ApiError ? e.message : 'Could not sign in. Try again.'); }
     finally { setBusy(false); }
   }
